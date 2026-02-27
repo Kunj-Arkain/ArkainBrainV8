@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Portfolio Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1b23;--card:#21222d;--border:#2d2e3a;--accent:#7c6aef;--success:#22c55e;--danger:#ef4444;--warn:#f59e0b;--info:#06b6d4;--text:#e2e8f0;--dim:#94a3b8;--muted:#64748b;--radius:10px;--mono:'JetBrains Mono',monospace}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+.app{max-width:1200px;margin:0 auto}
+.header{display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header h1{font-size:22px;font-weight:800;flex:1}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card h2{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)}
+.tabs{display:flex;gap:2px;background:var(--surface);border-radius:var(--radius);padding:3px;margin-bottom:20px;overflow-x:auto}
+.tab{padding:10px 18px;border-radius:8px;border:none;background:transparent;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text)}.tab.active{background:var(--accent);color:#fff}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.stat-card .value{font-size:28px;font-weight:800;color:var(--accent)}
+.stat-card .label{font-size:11px;color:var(--dim);margin-top:2px}
+.bar-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-h .name{font-size:11px;width:100px;color:var(--dim);text-align:right;flex-shrink:0}
+.bar-h .track{flex:1;height:20px;background:var(--surface);border-radius:4px;overflow:hidden;position:relative}
+.bar-h .fill{height:100%;border-radius:4px;transition:width .4s ease}
+.bar-h .val{font-size:10px;font-weight:700;width:40px;text-align:right;flex-shrink:0}
+.heatmap{display:grid;gap:2px;font-size:10px}
+.heatmap .cell{padding:6px 4px;text-align:center;border-radius:4px;font-weight:600;min-width:50px}
+.heatmap .header-cell{background:transparent;color:var(--dim);font-weight:600}
+.heatmap .row-label{background:transparent;color:var(--dim);text-align:right;padding-right:8px}
+.gap-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.gap-card .icon{font-size:20px;flex-shrink:0}
+.gap-card .content{flex:1}
+.gap-card .title{font-size:13px;font-weight:700}
+.gap-card .msg{font-size:11px;color:var(--dim);margin-top:2px}
+.gap-card .rec{font-size:11px;color:var(--accent);margin-top:4px;font-style:italic}
+.severity-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:6px}
+.sev-high{background:rgba(239,68,68,.15);color:var(--danger)}
+.sev-medium{background:rgba(245,158,11,.15);color:var(--warn)}
+.sev-low{background:rgba(6,182,212,.15);color:var(--info)}
+.trend-card{display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+.trend-arrow{font-size:16px;width:24px;text-align:center}
+.timeline-chart{display:flex;align-items:flex-end;gap:4px;height:120px;padding:8px 0}
+.timeline-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px}
+.timeline-bar .bar{width:100%;border-radius:3px 3px 0 0;background:var(--accent);transition:height .3s}
+.timeline-bar .lbl{font-size:8px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);max-height:40px;overflow:hidden}
+.timeline-bar .cnt{font-size:9px;font-weight:700;color:var(--accent)}
+.scenario-tabs{display:flex;gap:4px;margin-bottom:12px}
+.scenario-tab{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:11px;cursor:pointer}
+.scenario-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>window.PORTFOLIO=__PORTFOLIO_DATA__;</script>
+<script type="text/babel">
+const {useState,useMemo} = React;
+const D = window.PORTFOLIO || {};
+const COLORS = ['#7c6aef','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6','#f97316','#14b8a6','#a855f7','#64748b','#e11d48','#84cc16','#0ea5e9'];
+
+function StatCards({overview}) {
+  const o = overview || {};
+  const rtp = o.rtp_stats || {};
+  return <div className="stat-grid">
+    <div className="stat-card"><div className="value">{o.total_games||0}</div><div className="label">Total Games</div></div>
+    <div className="stat-card"><div className="value">{Object.keys(o.themes||{}).length}</div><div className="label">Theme Categories</div></div>
+    <div className="stat-card"><div className="value">{Object.keys(o.jurisdictions||{}).length}</div><div className="label">Jurisdictions</div></div>
+    <div className="stat-card"><div className="value" style={{color:'var(--success)'}}>{rtp.mean?rtp.mean.toFixed(1)+'%':'—'}</div><div className="label">Avg RTP</div></div>
+    <div className="stat-card"><div className="value" style={{color:'var(--warn)'}}>{o.revenue?.total_projected_ggr?'$'+Math.round(o.revenue.total_projected_ggr).toLocaleString():'—'}</div><div className="label">Projected Annual GGR</div></div>
+    <div className="stat-card"><div className="value">{Object.keys(o.mechanics||{}).length}</div><div className="label">Mechanics Used</div></div>
+  </div>;
+}
+
+function HorizontalBars({data, maxVal, color, label}) {
+  const mx = maxVal || Math.max(...Object.values(data||{}), 1);
+  return <div>
+    {Object.entries(data||{}).map(([k,v],i) =>
+      <div key={k} className="bar-h">
+        <span className="name">{k.replace(/_/g,' ')}</span>
+        <div className="track"><div className="fill" style={{width:`${(v/mx)*100}%`,background:COLORS[i%COLORS.length]}}/></div>
+        <span className="val">{typeof v==='number'?v:0}</span>
+      </div>
+    )}
+  </div>;
+}
+
+function Heatmap({heatmap}) {
+  if (!heatmap?.themes) return null;
+  const {themes, volatilities, data, market_data} = heatmap;
+  const maxCell = Math.max(1, ...themes.flatMap(t => volatilities.map(v => data[t]?.[v]||0)));
+  return <div>
+    <div className="heatmap" style={{gridTemplateColumns:`100px repeat(${volatilities.length}, 1fr)`}}>
+      <div className="header-cell"></div>
+      {volatilities.map(v => <div key={v} className="header-cell">{v.replace(/_/g,' ')}</div>)}
+      {themes.map(t => <>
+        <div key={t+'l'} className="row-label">{t}</div>
+        {volatilities.map(v => {
+          const val = data[t]?.[v]||0;
+          const intensity = maxCell>0?val/maxCell:0;
+          const bg = intensity>0?`rgba(124,106,239,${0.1+intensity*0.7})`:'rgba(255,255,255,0.02)';
+          return <div key={t+v} className="cell" style={{background:bg,color:intensity>0.5?'#fff':'var(--dim)'}}>
+            {val>0?val.toFixed(1):'·'}
+          </div>;
+        })}
+      </>)}
+    </div>
+    <div style={{marginTop:8,fontSize:10,color:'var(--muted)'}}>Cell values = estimated game count. Brighter = more coverage.</div>
+  </div>;
+}
+
+function Timeline({timeline}) {
+  if (!timeline?.length) return <div style={{color:'var(--dim)',fontSize:12}}>No generation history yet.</div>;
+  const maxC = Math.max(...timeline.map(t=>t.count),1);
+  return <div className="timeline-chart">
+    {timeline.map(t => <div key={t.month} className="timeline-bar">
+      <div className="cnt">{t.count}</div>
+      <div className="bar" style={{height:`${(t.count/maxC)*100}%`}}/>
+      <div className="lbl">{t.month}</div>
+    </div>)}
+  </div>;
+}
+
+function GapAnalysis({gaps}) {
+  if (!gaps?.length) return <div style={{color:'var(--dim)',fontSize:12}}>No gaps detected — portfolio is well-balanced.</div>;
+  return <div>
+    {gaps.map((g,i) => <div key={i} className="gap-card">
+      <div className="icon">{g.icon}</div>
+      <div className="content">
+        <div className="title">{g.title}<span className={`severity-badge sev-${g.severity}`}>{g.severity}</span></div>
+        <div className="msg">{g.message}</div>
+        {g.recommendation && <div className="rec">💡 {g.recommendation}</div>}
+      </div>
+    </div>)}
+  </div>;
+}
+
+function RevenueProjections({revenue, overview}) {
+  const [scenario, setScenario] = useState('base');
+  const scenarios = ['conservative','base','optimistic','bull'];
+  const multipliers = {conservative:.6,base:1,optimistic:1.5,bull:2};
+  const rev = overview?.revenue || {};
+  const total = rev.total_projected_ggr || 0;
+  const mult = multipliers[scenario];
+  const adjusted = total * mult;
+  const topGames = (rev.top_games||[]).slice(0,5);
+
+  return <div>
+    <div className="scenario-tabs">
+      {scenarios.map(s => <button key={s} className={`scenario-tab ${scenario===s?'active':''}`} onClick={()=>setScenario(s)}>
+        {s.charAt(0).toUpperCase()+s.slice(1)} ({mult}x)
+      </button>)}
+    </div>
+    <div className="stat-grid">
+      <div className="stat-card"><div className="value" style={{fontSize:22,color:'var(--success)'}}>{'$'+Math.round(adjusted).toLocaleString()}</div><div className="label">Annual GGR ({scenario})</div></div>
+      <div className="stat-card"><div className="value" style={{fontSize:22}}>{'$'+Math.round(adjusted/4).toLocaleString()}</div><div className="label">Quarterly</div></div>
+      <div className="stat-card"><div className="value" style={{fontSize:22}}>{'$'+Math.round(adjusted/12).toLocaleString()}</div><div className="label">Monthly</div></div>
+      <div className="stat-card"><div className="value" style={{fontSize:22}}>{rev.game_count_with_revenue||0}</div><div className="label">Games with Revenue Data</div></div>
+    </div>
+    {topGames.length>0 && <div style={{marginTop:12}}>
+      <h3 style={{fontSize:13,fontWeight:600,marginBottom:8}}>Top Revenue Games</h3>
+      {topGames.map((g,i) => <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
+        <span style={{color:'var(--text)'}}>{g.title}</span>
+        <span style={{fontFamily:'var(--mono)',color:'var(--success)'}}>${Math.round((g.ggr_365d||0)*mult).toLocaleString()}</span>
+      </div>)}
+    </div>}
+  </div>;
+}
+
+function TrendMonitor({trends, market}) {
+  const trendIcons = {rising:'📈',stable:'➡️',declining:'📉',warning:'⚠️'};
+  const trendColors = {rising:'var(--success)',stable:'var(--info)',declining:'var(--danger)',warning:'var(--warn)'};
+  const allTrends = trends || [];
+
+  return <div>
+    {market?.themes?.length>0 && <div className="card">
+      <h2>📊 Theme Market Share</h2>
+      <HorizontalBars data={Object.fromEntries(market.themes.map(t=>[t.name,t.market_share]))} maxVal={20}/>
+    </div>}
+    {market?.mechanics?.length>0 && <div className="card">
+      <h2>⚡ Mechanic Adoption (%)</h2>
+      <HorizontalBars data={Object.fromEntries(market.mechanics.map(m=>[m.name,m.adoption_pct]))} maxVal={100}/>
+    </div>}
+    <div className="card">
+      <h2>📡 Trend Signals</h2>
+      {allTrends.map((t,i) => <div key={i} className="trend-card">
+        <div className="trend-arrow" style={{color:trendColors[t.trend]||'var(--dim)'}}>{trendIcons[t.trend]||'•'}</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:12,fontWeight:600}}>{t.name} <span style={{fontSize:10,color:trendColors[t.trend],marginLeft:4}}>{t.trend}</span></div>
+          <div style={{fontSize:10,color:'var(--dim)',marginTop:2}}>{t.signal}</div>
+          {t.action && <div style={{fontSize:10,color:'var(--accent)',marginTop:2}}>💡 {t.action}</div>}
+        </div>
+      </div>)}
+    </div>
+    {market?.regulations?.length>0 && <div className="card">
+      <h2>⚖️ Regulatory Updates</h2>
+      {market.regulations.map((r,i) => <div key={i} className="trend-card">
+        <div className="trend-arrow">🏛️</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:12,fontWeight:600}}>{r.name}</div>
+          <div style={{fontSize:10,color:'var(--dim)',marginTop:2}}>Source: {r.source}</div>
+          {r.metadata?.status && <div style={{fontSize:10,color:'var(--success)',marginTop:2}}>Status: {r.metadata.status}</div>}
+        </div>
+      </div>)}
+    </div>}
+  </div>;
+}
+
+function OverviewTab({overview, heatmap}) {
+  return <>
+    <StatCards overview={overview}/>
+    <AlignmentScore/>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+      <div className="card"><h2>🎨 Themes</h2><HorizontalBars data={overview?.themes}/></div>
+      <div className="card"><h2>📈 Volatility</h2><HorizontalBars data={overview?.volatility}/></div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+      <div className="card"><h2>⚡ Mechanics</h2><HorizontalBars data={overview?.mechanics}/></div>
+      <div className="card"><h2>🌍 Jurisdictions</h2><HorizontalBars data={overview?.jurisdictions}/></div>
+    </div>
+    <div className="card"><h2>🗓️ Generation Timeline</h2><Timeline timeline={overview?.timeline}/></div>
+    <div className="card"><h2>🔥 Theme × Volatility Heatmap</h2><Heatmap heatmap={heatmap}/></div>
+    <SnapshotHistory/>
+  </>;
+}
+
+function AlignmentScore() {
+  const a = D.alignment || {};
+  if (!a.overall && a.overall !== 0) return null;
+  const dims = a.dimensions || {};
+  const gradeColors = {'A+':'var(--success)','A':'var(--success)','B+':'#22d3ee','B':'var(--info)','C+':'var(--warn)','C':'var(--warn)','D':'var(--danger)'};
+  const color = gradeColors[a.grade] || 'var(--dim)';
+  return <div className="card">
+    <h2>🎯 Market Alignment Score</h2>
+    <div style={{display:'flex',alignItems:'center',gap:24,marginBottom:12}}>
+      <div style={{position:'relative',width:80,height:80}}>
+        <svg viewBox="0 0 36 36" style={{width:80,height:80,transform:'rotate(-90deg)'}}>
+          <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--border)" strokeWidth="3"/>
+          <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={color} strokeWidth="3"
+            strokeDasharray={`${a.overall}, 100`}/>
+        </svg>
+        <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
+          <div style={{fontSize:20,fontWeight:800,color}}>{a.grade}</div>
+          <div style={{fontSize:10,color:'var(--dim)'}}>{a.overall}/100</div>
+        </div>
+      </div>
+      <div style={{flex:1}}>
+        {Object.entries(dims).map(([k,v]) =>
+          <div key={k} className="bar-h" style={{marginBottom:4}}>
+            <span className="name" style={{width:130,fontSize:10}}>{(a.interpretation?.[k] || k).slice(0,35)}</span>
+            <div className="track" style={{height:14}}><div className="fill" style={{width:`${v}%`,background: v>=70?'var(--success)':v>=40?'var(--warn)':'var(--danger)'}}/></div>
+            <span className="val" style={{fontSize:10}}>{v}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>;
+}
+
+function SnapshotHistory() {
+  const snaps = D.snapshots || [];
+  if (snaps.length < 2) return null;
+  const maxGames = Math.max(...snaps.map(s=>s.total_games), 1);
+  return <div className="card">
+    <h2>📸 Portfolio History ({snaps.length} snapshots)</h2>
+    <div style={{display:'flex',alignItems:'flex-end',gap:4,height:100,padding:'8px 0'}}>
+      {snaps.slice().reverse().map(s => {
+        const pct = (s.total_games / maxGames) * 100;
+        return <div key={s.id} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',gap:2}}>
+          <div style={{fontSize:9,fontWeight:700,color:'var(--accent)'}}>{s.total_games}</div>
+          <div style={{width:'100%',height:`${Math.max(pct,5)}%`,background:'var(--accent)',borderRadius:'3px 3px 0 0',minHeight:3}}/>
+          <div style={{fontSize:7,color:'var(--muted)',writingMode:'vertical-rl',transform:'rotate(180deg)',maxHeight:30,overflow:'hidden'}}>{s.date?.slice(5)}</div>
+        </div>;
+      })}
+    </div>
+    <div style={{fontSize:10,color:'var(--muted)',marginTop:4}}>Game count over time. Snapshots captured daily.</div>
+  </div>;
+}
+
+function PortfolioApp() {
+  const {overview, gaps, heatmap, trends, market} = D;
+  const [tab, setTab] = useState('overview');
+
+  return <div className="app">
+    <div className="header">
+      <a href="/history" style={{color:'var(--dim)',fontSize:12,textDecoration:'none'}}>← History</a>
+      <h1>📊 Portfolio Intelligence</h1>
+      <span style={{fontSize:11,color:'var(--dim)'}}>{overview?.total_games||0} games</span>
+    </div>
+    <div className="tabs">
+      {[['overview','📊 Overview'],['gaps','🔍 Gap Analysis'],['revenue','💰 Revenue'],['trends','📡 Trends']].map(([id,label]) =>
+        <button key={id} className={`tab ${tab===id?'active':''}`} onClick={()=>setTab(id)}>{label}</button>
+      )}
+    </div>
+    {tab==='overview' && <OverviewTab overview={overview} heatmap={heatmap}/>}
+    {tab==='gaps' && <div className="card"><h2>🔍 Gap Analysis ({(gaps||[]).length} findings)</h2><GapAnalysis gaps={gaps}/></div>}
+    {tab==='revenue' && <div className="card"><h2>💰 Revenue Projections</h2><RevenueProjections overview={overview}/></div>}
+    {tab==='trends' && <TrendMonitor trends={trends} market={market}/>}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<PortfolioApp/>);
+</script>
+</body>
+</html>

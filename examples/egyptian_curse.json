@@ -1,0 +1,25 @@
+{
+  "theme": "Ancient Egypt - Curse of the Pharaoh",
+  "target_markets": ["UK", "Malta", "Ontario"],
+  "volatility": "high",
+  "target_rtp": 96.5,
+  "grid_rows": 3,
+  "grid_cols": 5,
+  "ways_or_lines": "243 ways",
+  "max_win_multiplier": 10000,
+  "art_style": "Dark, cinematic, AAA quality — think Tomb Raider meets ancient mysticism",
+  "requested_features": [
+    "free_spins",
+    "multipliers",
+    "expanding_wilds",
+    "cascading_reels"
+  ],
+  "competitor_references": [
+    "Book of Dead",
+    "Legacy of Dead",
+    "Book of Ra Deluxe",
+    "Eye of Horus",
+    "Cleopatra"
+  ],
+  "special_requirements": "The curse mechanic should be the central differentiator — symbols become cursed during free spins and transform into wilds. Escalating multiplier with each cascade."
+}

@@ -1,0 +1,18 @@
+# ARKAINBRAIN — Worker Service (Railway)
+# Executes pipeline jobs via RQ (Redis Queue).
+# 8 vCPU / 16 GB RAM — CPU-bound LLM orchestration + CrewAI agents.
+# Auto-scales 1→5 replicas based on queue depth.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python -m rq.cli worker arkainbrain --url $REDIS_URL --with-scheduler --logging_level INFO"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1
+
+[deploy.resources]
+cpuLimit = 8
+memoryLimit = "16Gi"

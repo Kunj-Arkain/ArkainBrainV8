@@ -1,0 +1,50 @@
+# =============================================================
+# Automated Slot Studio - Dependencies
+# =============================================================
+
+# --- Core Orchestration ---
+crewai[tools]>=0.80.0
+crewai-tools>=0.14.0
+pydantic>=2.0
+litellm>=1.40.0                 # Phase 2: LLM routing layer (CrewAI uses this)
+
+# --- LLM Providers ---
+openai>=1.40.0                  # Phase 2: GPT-4o, GPT-4o-mini, DALL-E 3
+
+# --- Math & Data (Phase 3: simulation engine) ---
+numpy>=1.26.0
+scipy>=1.12.0
+pandas>=2.2.0
+matplotlib>=3.8.0               # Charts for math reports
+
+# --- Vector DB / RAG (Phase 4) ---
+qdrant-client>=1.9.0            # Vector search for regulatory docs
+
+# --- PDF Processing (Phase 4: RAG ingestion) ---
+pymupdf>=1.24.0                 # PDF text extraction for ingestion (import fitz)
+pdfplumber>=0.11.0              # Fallback PDF extraction
+
+# --- PDF Generation (output) ---
+reportlab>=4.1.0                # Branded PDF output
+
+# --- Web Search (Phase 3: tools) ---
+httpx>=0.27.0                   # HTTP client for Serper API + image downloads
+
+# --- Web Interface ---
+flask>=3.0.0
+authlib>=1.3.0                  # Google OAuth
+flask-login>=0.6.0              # Session management
+
+# --- Database (Phase 5A: PostgreSQL + SQLite dual-mode) ---
+psycopg[binary,pool]>=3.1.0    # PostgreSQL driver + connection pool (production)
+# SQLite is built-in — used as fallback when DATABASE_URL not set
+
+# --- Job Queue (Phase 5A: Redis + RQ) ---
+redis>=5.0.0                    # Redis client
+rq>=1.16.0                      # Redis Queue — job dispatching
+
+# --- CLI & Output ---
+jinja2>=3.1.0
+rich>=13.7.0                    # Pretty console output
+python-dotenv>=1.0.0            # .env file loading
+pyyaml>=6.0.0

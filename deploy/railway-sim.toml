@@ -1,0 +1,22 @@
+# ARKAINBRAIN — Simulation Runner Service (Railway)
+# Dedicated Monte Carlo simulation engine (Phase 5B+).
+# 4 vCPU / 8 GB RAM — CPU-bound numerical computation.
+# Auto-scales 1→10 replicas for batch simulation jobs.
+#
+# For Phase 5A this runs as an RQ worker listening to the
+# "arkainbrain:sim" queue. Phase 5B will add the dedicated
+# sim_engine/ REST API endpoint.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python -m rq.cli worker arkainbrain:sim --url $REDIS_URL --with-scheduler --logging_level INFO"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1
+
+[deploy.resources]
+cpuLimit = 4
+memoryLimit = "8Gi"

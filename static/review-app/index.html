@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Interactive Review</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1b23;--card:#21222d;--border:#2d2e3a;--border-h:#3d3e4a;--accent:#7c6aef;--accent2:#22c55e;--danger:#ef4444;--warn:#f59e0b;--text:#e2e8f0;--dim:#94a3b8;--muted:#64748b;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,.3)}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.review-app{max-width:1400px;margin:0 auto;padding:16px}
+.review-header{display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.review-header h1{font-size:20px;font-weight:700;flex:1}
+.back-link{color:var(--dim);font-size:12px;text-decoration:none}
+.back-link:hover{color:var(--text)}
+.tabs{display:flex;gap:2px;background:var(--surface);border-radius:var(--radius);padding:3px;margin-bottom:16px}
+.tab{padding:8px 16px;border-radius:6px;border:none;background:transparent;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--accent);color:#fff}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.panel-header h2{font-size:14px;font-weight:600;flex:1}
+.panel-body{padding:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.stat-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--surface);font-size:12px;font-weight:600}
+.stat-pill.good{border:1px solid var(--accent2);color:var(--accent2)}
+.stat-pill.warn{border:1px solid var(--warn);color:var(--warn)}
+.stat-pill.bad{border:1px solid var(--danger);color:var(--danger)}
+.gauge{width:100%;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin:6px 0}
+.gauge-fill{height:100%;border-radius:4px;transition:width .3s}
+.section-card{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.section-card:hover{border-color:var(--border-h)}
+.section-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--surface)}
+.section-header h3{font-size:13px;font-weight:600;flex:1}
+.section-body{padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+.section-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.section-badge.approved{background:rgba(34,197,94,.15);color:var(--accent2)}
+.section-badge.pending{background:rgba(124,106,239,.15);color:var(--accent)}
+.section-badge.changes{background:rgba(239,68,68,.15);color:var(--danger)}
+.approval-bar{display:flex;gap:6px;padding:8px 14px;border-top:1px solid var(--border);background:var(--surface)}
+.approval-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.approval-btn:hover{border-color:var(--accent)}
+.approval-btn.approve{border-color:var(--accent2);color:var(--accent2)}
+.approval-btn.approve:hover{background:var(--accent2);color:#fff}
+.approval-btn.reject{border-color:var(--danger);color:var(--danger)}
+.approval-btn.reject:hover{background:var(--danger);color:#fff}
+table.paytable{width:100%;border-collapse:collapse;font-size:12px}
+table.paytable th{background:var(--surface);padding:8px 10px;text-align:left;font-weight:600;color:var(--dim);border-bottom:1px solid var(--border);position:sticky;top:0}
+table.paytable td{padding:6px 10px;border-bottom:1px solid var(--border)}
+table.paytable td input{width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-size:12px;font-family:monospace;text-align:right}
+table.paytable td input:focus{border-color:var(--accent);outline:none}
+table.paytable tr.edited td{background:rgba(124,106,239,.06)}
+.comment-box{margin-top:8px;padding:8px 14px;border-top:1px solid var(--border)}
+.comment-input{display:flex;gap:6px}
+.comment-input input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px}
+.comment-input button{padding:6px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer}
+.comment-item{padding:6px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.03)}
+.comment-item .author{color:var(--accent);font-weight:600;margin-right:6px}
+.comment-item .time{color:var(--muted);font-size:10px;margin-left:6px}
+.diff-panel{font-family:monospace;font-size:11px;line-height:1.6;overflow-x:auto}
+.diff-line{padding:1px 12px;white-space:pre}
+.diff-add{background:rgba(34,197,94,.1);color:var(--accent2)}
+.diff-del{background:rgba(239,68,68,.1);color:var(--danger)}
+.diff-hdr{background:rgba(124,106,239,.1);color:var(--accent);font-weight:600;padding:6px 12px}
+.rtp-gauge-big{text-align:center;padding:20px}
+.rtp-gauge-big .rtp-val{font-size:48px;font-weight:800}
+.rtp-gauge-big .rtp-label{font-size:12px;color:var(--dim);margin-top:4px}
+.rtp-gauge-big .rtp-delta{font-size:14px;font-weight:600;margin-top:6px}
+.btn-primary{padding:10px 20px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.9}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+window.REVIEW_DATA = __REVIEW_DATA__;
+window.JOB_ID = "__JOB_ID__";
+window.COMMENTS = __COMMENTS__;
+window.APPROVALS = __APPROVALS__;
+</script>
+<script type="text/babel">
+const {useState, useEffect, useCallback, useRef} = React;
+
+// ═══ SimDashboard ═══
+function SimDashboard({sim, rtp}) {
+  if (!sim && !rtp) return <div className="empty">No simulation data</div>;
+  const measured = sim?.measured_rtp || sim?.rtp || rtp?.estimated_rtp;
+  const target = rtp?.target_rtp || 96;
+  const delta = measured ? (measured - target) : null;
+  const hitRate = sim?.hit_frequency_pct || sim?.hit_frequency || sim?.hit_rate;
+  const maxWin = sim?.max_win_achieved || sim?.max_win;
+  const volIdx = sim?.volatility_index;
+  const spins = sim?.total_spins;
+
+  const deltaClass = delta !== null ? (Math.abs(delta) < 0.3 ? 'good' : Math.abs(delta) < 1 ? 'warn' : 'bad') : '';
+  const rtpColor = deltaClass === 'good' ? 'var(--accent2)' : deltaClass === 'warn' ? 'var(--warn)' : 'var(--danger)';
+
+  return <div>
+    <div className="rtp-gauge-big">
+      <div className="rtp-val" style={{color: rtpColor}}>{measured ? measured.toFixed(2) + '%' : 'N/A'}</div>
+      <div className="rtp-label">Measured RTP (target: {target}%)</div>
+      {delta !== null && <div className="rtp-delta" style={{color: rtpColor}}>
+        {delta > 0 ? '+' : ''}{delta.toFixed(3)}% {Math.abs(delta) < 0.3 ? '✅ Within tolerance' : Math.abs(delta) < 1 ? '⚠️ Near limit' : '❌ Out of tolerance'}
+      </div>}
+    </div>
+    <div className="gauge"><div className="gauge-fill" style={{width: `${Math.min(100, (measured||0))}%`, background: rtpColor}}/></div>
+    <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
+      {hitRate && <span className="stat-pill good">Hit Rate: {typeof hitRate === 'number' && hitRate < 1 ? (hitRate*100).toFixed(1) : hitRate}%</span>}
+      {maxWin && <span className="stat-pill warn">Max Win: {maxWin}x</span>}
+      {volIdx && <span className="stat-pill">{volIdx}</span>}
+      {spins && <span className="stat-pill">{Number(spins).toLocaleString()} spins</span>}
+    </div>
+  </div>;
+}
+
+// ═══ GDDEditor ═══
+function GDDEditor({sections, comments, approvals, jobId}) {
+  const [expanded, setExpanded] = useState({});
+  const [editing, setEditing] = useState({});
+  const [editText, setEditText] = useState({});
+  const [localComments, setLocalComments] = useState(comments || []);
+  const [localApprovals, setLocalApprovals] = useState(approvals || []);
+  const [commentText, setCommentText] = useState({});
+
+  const toggle = (id) => setExpanded(prev => ({...prev, [id]: !prev[id]}));
+
+  const getApproval = (sectionId) => {
+    const a = localApprovals.find(x => x.section === sectionId);
+    return a?.status || 'pending';
+  };
+
+  const setApproval = async (sectionId, status) => {
+    try {
+      const res = await fetch(`/api/review/${jobId}/section-approval`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({section: sectionId, status})
+      });
+      if (res.ok) {
+        setLocalApprovals(prev => [...prev.filter(a => a.section !== sectionId), {section: sectionId, status}]);
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  const addComment = async (sectionId) => {
+    const text = commentText[sectionId];
+    if (!text?.trim()) return;
+    try {
+      const res = await fetch(`/api/review/${jobId}/comment`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({section: sectionId, content: text})
+      });
+      if (res.ok) {
+        const c = await res.json();
+        setLocalComments(prev => [...prev, c]);
+        setCommentText(prev => ({...prev, [sectionId]: ''}));
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  const saveSection = async (sectionId) => {
+    try {
+      await fetch(`/api/review/${jobId}/gdd-section`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({section_id: sectionId, content: editText[sectionId]})
+      });
+      setEditing(prev => ({...prev, [sectionId]: false}));
+    } catch(e) { console.error(e); }
+  };
+
+  if (!sections?.length) return <div className="empty">No GDD sections found</div>;
+
+  return <div>
+    {sections.map(s => {
+      const status = getApproval(s.id);
+      const sectionComments = localComments.filter(c => c.section === s.id);
+      return <div key={s.id} className="section-card" style={status==='approved'?{borderColor:'var(--accent2)'}:status==='changes_requested'?{borderColor:'var(--danger)'}:{}}>
+        <div className="section-header" onClick={() => toggle(s.id)}>
+          <span style={{fontSize:16}}>{expanded[s.id] ? '▼' : '▶'}</span>
+          <h3>{s.title}</h3>
+          <span style={{fontSize:10,color:'var(--muted)'}}>{s.word_count} words</span>
+          <span className={`section-badge ${status==='approved'?'approved':status==='changes_requested'?'changes':'pending'}`}>
+            {status==='approved'?'✅ Approved':status==='changes_requested'?'🔄 Changes':'⏳ Pending'}
+          </span>
+        </div>
+        {expanded[s.id] && <>
+          <div className="section-body">
+            {editing[s.id] ?
+              <textarea value={editText[s.id] ?? s.content} onChange={e => setEditText({...editText, [s.id]: e.target.value})}
+                style={{width:'100%',minHeight:200,padding:10,border:'1px solid var(--border)',borderRadius:6,background:'var(--bg)',color:'var(--text)',fontFamily:'monospace',fontSize:12,resize:'vertical'}}/>
+              : s.content
+            }
+          </div>
+          <div className="approval-bar">
+            {editing[s.id] ?
+              <><button className="approval-btn approve" onClick={() => saveSection(s.id)}>💾 Save</button>
+              <button className="approval-btn" onClick={() => setEditing({...editing, [s.id]: false})}>Cancel</button></>
+              :
+              <button className="approval-btn" onClick={() => {setEditing({...editing, [s.id]: true}); setEditText({...editText, [s.id]: s.content});}}>✏️ Edit</button>
+            }
+            <button className="approval-btn approve" onClick={() => setApproval(s.id, 'approved')}>✅ Approve</button>
+            <button className="approval-btn reject" onClick={() => setApproval(s.id, 'changes_requested')}>🔄 Request Changes</button>
+            <span style={{flex:1}}/>
+            <span style={{fontSize:10,color:'var(--muted)'}}>{sectionComments.length} comments</span>
+          </div>
+          <div className="comment-box">
+            {sectionComments.map(c => <div key={c.id} className="comment-item">
+              <span className="author">{c.author||'You'}</span>{c.content}
+              <span className="time">{c.created_at?.slice(11,16)||''}</span>
+            </div>)}
+            <div className="comment-input">
+              <input placeholder="Add a comment..." value={commentText[s.id]||''} onChange={e => setCommentText({...commentText, [s.id]: e.target.value})}
+                onKeyDown={e => e.key==='Enter' && addComment(s.id)}/>
+              <button onClick={() => addComment(s.id)}>Send</button>
+            </div>
+          </div>
+        </>}
+      </div>;
+    })}
+  </div>;
+}
+
+// ═══ PaytableEditor ═══
+function PaytableEditor({paytable, jobId, rtp}) {
+  const [pt, setPt] = useState(paytable);
+  const [editedCells, setEditedCells] = useState({});
+  const [rtpData, setRtpData] = useState(rtp);
+
+  if (!pt) return <div className="empty">No paytable data available</div>;
+
+  const isDict = !Array.isArray(pt);
+  const symbols = isDict ? Object.keys(pt) : pt.map(r => r.symbol || r.name || '?');
+  const payKeys = isDict ? (symbols.length > 0 ? Object.keys(pt[symbols[0]]||{}).filter(k => !isNaN(pt[symbols[0]][k])) : []) :
+    Object.keys(pt[0]||{}).filter(k => k !== 'symbol' && k !== 'name');
+
+  const handleEdit = async (symbol, key, value) => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+    const cellKey = `${symbol}-${key}`;
+    setEditedCells(prev => ({...prev, [cellKey]: true}));
+
+    if (isDict) {
+      setPt(prev => ({...prev, [symbol]: {...prev[symbol], [key]: num}}));
+    } else {
+      setPt(prev => prev.map(r => (r.symbol||r.name) === symbol ? {...r, [key]: num} : r));
+    }
+
+    try {
+      await fetch(`/api/review/${jobId}/paytable`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({symbol, key, pay: num})
+      });
+      const rtpRes = await fetch(`/api/review/${jobId}/rtp-estimate`);
+      if (rtpRes.ok) setRtpData(await rtpRes.json());
+    } catch(e) { console.error(e); }
+  };
+
+  return <div>
+    <div style={{display:'flex',gap:12,alignItems:'center',marginBottom:12}}>
+      <span className={`stat-pill ${rtpData?.delta && Math.abs(rtpData.delta)<0.3?'good':Math.abs(rtpData?.delta||0)<1?'warn':'bad'}`}>
+        RTP: {rtpData?.estimated_rtp ? rtpData.estimated_rtp.toFixed(2)+'%' : 'N/A'}
+      </span>
+      {rtpData?.delta && <span style={{fontSize:11,color:'var(--dim)'}}>
+        Δ {rtpData.delta > 0 ? '+' : ''}{rtpData.delta.toFixed(3)}%
+      </span>}
+      {rtpData?.warning && <span style={{fontSize:11,color:'var(--warn)'}}>⚠️ {rtpData.warning}</span>}
+    </div>
+    <div style={{overflowX:'auto',maxHeight:500}}>
+      <table className="paytable">
+        <thead><tr><th>Symbol</th>{payKeys.map(k => <th key={k}>{k}</th>)}</tr></thead>
+        <tbody>
+          {symbols.map(sym => {
+            const row = isDict ? pt[sym] : pt.find(r => (r.symbol||r.name) === sym);
+            return <tr key={sym} className={payKeys.some(k => editedCells[`${sym}-${k}`]) ? 'edited' : ''}>
+              <td style={{fontWeight:600,color:'var(--accent)'}}>{sym}</td>
+              {payKeys.map(k => {
+                const val = isDict ? row?.[k] : row?.[k];
+                return <td key={k}>
+                  {typeof val === 'number' ?
+                    <input defaultValue={val} onBlur={e => handleEdit(sym, k, e.target.value)}
+                      style={editedCells[`${sym}-${k}`]?{borderColor:'var(--accent)'}:{}}/>
+                    : <span style={{color:'var(--muted)',fontSize:11}}>{String(val||'—')}</span>
+                  }
+                </td>;
+              })}
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>;
+}
+
+// ═══ DiffViewer ═══
+function DiffViewer({diffs}) {
+  if (!diffs?.length) return <div className="empty">No OODA revisions or diffs found</div>;
+
+  const simpleDiff = (oldText, newText) => {
+    const oldLines = (oldText||'').split('\n');
+    const newLines = (newText||'').split('\n');
+    const result = [];
+    const maxLen = Math.max(oldLines.length, newLines.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < oldLines.length && i < newLines.length) {
+        if (oldLines[i] !== newLines[i]) {
+          if (oldLines[i]) result.push({type:'del', text: oldLines[i]});
+          if (newLines[i]) result.push({type:'add', text: newLines[i]});
+        } else {
+          result.push({type:'ctx', text: oldLines[i]});
+        }
+      } else if (i >= oldLines.length) {
+        result.push({type:'add', text: newLines[i]});
+      } else {
+        result.push({type:'del', text: oldLines[i]});
+      }
+    }
+    return result;
+  };
+
+  return <div>
+    {diffs.map((d, i) => <div key={i} className="panel" style={{marginBottom:8}}>
+      <div className="diff-hdr">📄 {d.directory}/{d.file} {d.type==='adversarial_review'?'(Adversarial Review)':''}</div>
+      <div className="diff-panel" style={{maxHeight:300,overflowY:'auto'}}>
+        {simpleDiff(d.old, d.new).slice(0,200).map((line, j) =>
+          <div key={j} className={`diff-line ${line.type==='add'?'diff-add':line.type==='del'?'diff-del':''}`}>
+            {line.type==='add'?'+ ':line.type==='del'?'- ':'  '}{line.text}
+          </div>
+        )}
+      </div>
+    </div>)}
+  </div>;
+}
+
+// ═══ FileBrowser ═══
+function FileBrowser({files, jobId}) {
+  const exts = [...new Set(files.map(f => f.ext))].sort();
+  const [filter, setFilter] = useState('');
+  const filtered = filter ? files.filter(f => f.ext === filter) : files;
+
+  return <div>
+    <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:8}}>
+      <button className={`approval-btn ${!filter?'approve':''}`} onClick={() => setFilter('')}>All ({files.length})</button>
+      {exts.slice(0,8).map(e => <button key={e} className={`approval-btn ${filter===e?'approve':''}`} onClick={() => setFilter(e)}>{e} ({files.filter(f=>f.ext===e).length})</button>)}
+    </div>
+    <div style={{maxHeight:400,overflowY:'auto'}}>
+      {filtered.slice(0,100).map(f => <div key={f.path} style={{display:'flex',gap:8,padding:'4px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
+        <span style={{flex:1,fontFamily:'monospace',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.path}</span>
+        <span style={{color:'var(--muted)',whiteSpace:'nowrap'}}>{(f.size/1024).toFixed(1)} KB</span>
+      </div>)}
+    </div>
+  </div>;
+}
+
+// ═══ Main App ═══
+function ReviewApp() {
+  const data = window.REVIEW_DATA || {};
+  const jobId = window.JOB_ID;
+  const [tab, setTab] = useState('overview');
+
+  const approvedCount = (window.APPROVALS||[]).filter(a => a.status === 'approved').length;
+  const totalSections = data.gdd_sections?.length || 0;
+
+  return <div className="review-app">
+    <div className="review-header">
+      <a href={`/job/${jobId}/files`} className="back-link">← Back to Job</a>
+      <h1>📋 Interactive Review</h1>
+      <span className="stat-pill">{approvedCount}/{totalSections} sections approved</span>
+      <a href="/reviews" className="back-link">All Reviews →</a>
+    </div>
+
+    <div className="tabs">
+      {[['overview','📊 Overview'],['gdd','📄 GDD Editor'],['paytable','📋 Paytable'],['diffs','🔄 Diffs'],['files','📁 Files']].map(([id, label]) =>
+        <button key={id} className={`tab ${tab===id?'active':''}`} onClick={() => setTab(id)}>{label}</button>
+      )}
+    </div>
+
+    {tab === 'overview' && <div className="grid-3">
+      <div>
+        <div className="panel" style={{marginBottom:12}}>
+          <div className="panel-header"><h2>🎯 RTP Dashboard</h2></div>
+          <div className="panel-body"><SimDashboard sim={data.sim_results} rtp={data.rtp_estimate}/></div>
+        </div>
+        <div className="panel">
+          <div className="panel-header"><h2>📄 GDD Sections</h2><span style={{fontSize:11,color:'var(--muted)'}}>{totalSections} sections</span></div>
+          <div className="panel-body">
+            <GDDEditor sections={data.gdd_sections} comments={window.COMMENTS} approvals={window.APPROVALS} jobId={jobId}/>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div className="panel" style={{marginBottom:12}}>
+          <div className="panel-header"><h2>📋 Paytable</h2></div>
+          <div className="panel-body"><PaytableEditor paytable={data.paytable} jobId={jobId} rtp={data.rtp_estimate}/></div>
+        </div>
+        {data.diffs?.length > 0 && <div className="panel">
+          <div className="panel-header"><h2>🔄 OODA Revisions</h2><span style={{fontSize:11,color:'var(--muted)'}}>{data.diffs.length} changes</span></div>
+          <div className="panel-body"><DiffViewer diffs={data.diffs}/></div>
+        </div>}
+      </div>
+    </div>}
+
+    {tab === 'gdd' && <div className="panel">
+      <div className="panel-header"><h2>📄 Game Design Document — Section Editor</h2></div>
+      <div className="panel-body">
+        <GDDEditor sections={data.gdd_sections} comments={window.COMMENTS} approvals={window.APPROVALS} jobId={jobId}/>
+      </div>
+    </div>}
+
+    {tab === 'paytable' && <div className="panel">
+      <div className="panel-header"><h2>📋 Paytable Editor — Edit cells for instant RTP recalculation</h2></div>
+      <div className="panel-body"><PaytableEditor paytable={data.paytable} jobId={jobId} rtp={data.rtp_estimate}/></div>
+    </div>}
+
+    {tab === 'diffs' && <div className="panel">
+      <div className="panel-header"><h2>🔄 OODA Loop Revisions & Adversarial Reviews</h2></div>
+      <div className="panel-body"><DiffViewer diffs={data.diffs}/></div>
+    </div>}
+
+    {tab === 'files' && <div className="panel">
+      <div className="panel-header"><h2>📁 All Output Files</h2></div>
+      <div className="panel-body"><FileBrowser files={data.files||[]} jobId={jobId}/></div>
+    </div>}
+
+    <div style={{marginTop:16,display:'flex',gap:12,justifyContent:'center'}}>
+      <form method="POST" action={`/api/review/${jobId}/bulk-approve`}>
+        <button type="submit" className="btn-primary" style={{padding:'12px 32px'}}>✅ Approve All & Continue Pipeline</button>
+      </form>
+      <a href={`/job/${jobId}/files`} style={{padding:'12px 32px',borderRadius:8,border:'1px solid var(--border)',color:'var(--text)',textDecoration:'none',fontSize:13,fontWeight:600,display:'inline-flex',alignItems:'center'}}>View Files</a>
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ReviewApp/>);
+</script>
+</body>
+</html>
